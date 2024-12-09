@@ -1,15 +1,13 @@
 package main
 
 import (
+	"Gorch/internal/worker"
+	"Gorch/pkg/pod"
 	"context"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
-	"io"
+	"github.com/renstrom/shortuuid"
 	"log"
-	"os"
 )
 
 func main() {
@@ -21,46 +19,19 @@ func main() {
 	}
 	defer cli.Close()
 
-	reader, err := cli.ImagePull(ctx, "zalerix/webapp", image.PullOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	io.Copy(os.Stdout, reader)
+	w := worker.NewWorker(cli)
 
-	cc := &container.Config{
-		Image: "zalerix/webapp",
-		Cmd:   []string{},
-		ExposedPorts: nat.PortSet{
-			nat.Port("8000"): struct{}{},
+	w.Start(ctx, pod.CreateRequest{
+		ID:   shortuuid.New(),
+		Name: "My Worker Pod",
+		Config: pod.Config{
+			Image: "zalerix/webapp",
+			ExposedPorts: nat.PortSet{
+				"8000": struct{}{},
+			},
+			CPURequest:    100,
+			MemoryRequest: 300,
 		},
-	}
+	})
 
-	pm := nat.PortMap{}
-	pm["8000"] = []nat.PortBinding{
-		{HostPort: "9115"},
-	}
-
-	hc := &container.HostConfig{
-		PortBindings: pm,
-	}
-
-	resp, err := cli.ContainerCreate(ctx, cc, hc, nil, nil, "mycontainer")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		log.Fatal(err)
-	}
-
-	_, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-	if err := <-errCh; err != nil {
-		log.Fatal(err)
-	}
-
-	out, err := cli.ContainerLogs(ctx, resp.ID, container.LogsOptions{ShowStdout: true, ShowStderr: true})
-	if err != nil {
-		log.Fatal(err)
-	}
-	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 }
