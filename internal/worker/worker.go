@@ -24,11 +24,11 @@ func NewWorker(client *client.Client) Worker {
 	return Worker{client}
 }
 
-func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.CreateResponse {
+func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.ClientResponse {
 	// pull image
 	reader, err := w.client.ImagePull(ctx, request.Image, image.PullOptions{})
 	if err != nil {
-		return pod.CreateResponse{
+		return pod.ClientResponse{
 			ID:       request.ID,
 			ErrorMsg: fmt.Sprintf("pull image: %s", err),
 		}
@@ -66,7 +66,7 @@ func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.Create
 
 	resp, err := w.client.ContainerCreate(ctx, cc, hc, nil, nil, name)
 	if err != nil {
-		return pod.CreateResponse{
+		return pod.ClientResponse{
 			ID:       request.ID,
 			ErrorMsg: fmt.Sprintf("create container: %s", err),
 		}
@@ -74,7 +74,7 @@ func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.Create
 
 	//start container
 	if err := w.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return pod.CreateResponse{
+		return pod.ClientResponse{
 			ID:          request.ID,
 			ContainerID: resp.ID,
 			StartedAt:   time.Now().UTC(),
@@ -85,7 +85,7 @@ func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.Create
 	// retrieve container data
 	cjson, err := w.client.ContainerInspect(ctx, resp.ID)
 	if err != nil {
-		return pod.CreateResponse{
+		return pod.ClientResponse{
 			ID:          request.ID,
 			ContainerID: resp.ID,
 			StartedAt:   time.Now().UTC(),
@@ -100,11 +100,38 @@ func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.Create
 		}
 	}
 
-	return pod.CreateResponse{
+	return pod.ClientResponse{
 		ID:             request.ID,
 		ContainerID:    resp.ID,
 		StartedAt:      time.Now().UTC(),
 		IP:             cjson.NetworkSettings.IPAddress,
 		EphemeralPorts: ports,
 	}
+}
+
+func (w *Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse {
+	//Stop container
+	if err := w.client.ContainerStop(ctx, containerID, container.StopOptions{}); err != nil {
+		return pod.ClientResponse{
+			ContainerID: containerID,
+			ErrorMsg:    fmt.Sprintf("stop container: %s", err),
+		}
+	}
+
+	err := w.client.ContainerRemove(ctx, containerID, container.RemoveOptions{
+		RemoveVolumes: true,
+	})
+	if err != nil {
+		return pod.ClientResponse{
+			ContainerID: containerID,
+			ErrorMsg:    fmt.Sprintf("remove container: %s", err),
+			FinishedAt:  time.Now().UTC(),
+		}
+	}
+
+	return pod.ClientResponse{
+		ContainerID: containerID,
+		FinishedAt:  time.Now().UTC(),
+	}
+
 }

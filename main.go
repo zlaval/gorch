@@ -8,6 +8,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/renstrom/shortuuid"
 	"log"
+	"time"
 )
 
 func main() {
@@ -21,7 +22,7 @@ func main() {
 
 	w := worker.NewWorker(cli)
 
-	w.Start(ctx, pod.CreateRequest{
+	response := w.Start(ctx, pod.CreateRequest{
 		ID:   shortuuid.New(),
 		Name: "My Worker Pod",
 		Config: pod.Config{
@@ -33,5 +34,9 @@ func main() {
 			MemoryRequest: 300,
 		},
 	})
+
+	time.Sleep(10 * time.Second)
+
+	w.Stop(ctx, response.ContainerID)
 
 }

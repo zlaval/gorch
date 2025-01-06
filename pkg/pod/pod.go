@@ -12,7 +12,7 @@ type CreateRequest struct {
 	Name string
 }
 
-type CreateResponse struct {
+type ClientResponse struct {
 	ID             string
 	ContainerID    string
 	IP             string
