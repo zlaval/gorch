@@ -30,3 +30,11 @@ type Config struct {
 	CPURequest    int64
 	MemoryRequest int64
 }
+
+type Stats struct {
+	ContainerID string
+	Name        string
+	Image       string
+	State       string
+	Status      string
+}

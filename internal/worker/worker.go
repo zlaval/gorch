@@ -24,6 +24,28 @@ func NewWorker(client *client.Client) Worker {
 	return Worker{client}
 }
 
+func (w Worker) ListPods(ctx context.Context) ([]pod.Stats, error) {
+	cs, err := w.client.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		return nil, fmt.Errorf("list containers: %w", err)
+	}
+
+	var res []pod.Stats
+
+	for c := range slices.Values(cs) {
+		s := pod.Stats{
+			ContainerID: c.ID,
+			State:       c.State,
+			Name:        c.Names[0],
+			Image:       c.Image,
+			Status:      c.Status,
+		}
+		res = append(res, s)
+	}
+
+	return res, nil
+}
+
 func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.ClientResponse {
 	// pull image
 	reader, err := w.client.ImagePull(ctx, request.Image, image.PullOptions{})

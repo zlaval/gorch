@@ -1,13 +1,16 @@
+### Get Pods
+GET http://localhost:8081/pods
+
 ### Create Pod
 POST http://localhost:8081/pods
 
 {
     "ID": "1",
-    "Name": "my-pod",
+    "Name": "my-pod2",
     "Image": "zalerix/webapp",
     "CPURequest": 100,
     "MemoryRequest": 50
 }
 
 ### Delete pod
-DELETE http://localhost:8081/pods/31e98e326dce64ed9ef857a8cd14594aa1c422a317c786af3b95f36c9e0eadcc
+DELETE http://localhost:8081/pods/57ddf1eb8d2fec068d7371b31cd8a32cde7da3876e326ccfbf8bbb9c09f0fb6c

@@ -49,6 +49,7 @@ func (a *Api) routes() http.Handler {
 
 	mux.Route("/pods", func(r chi.Router) {
 		r.Post("/", a.createPod)
+		r.Get("/", a.listPods)
 		r.Route("/{containerID}", func(r chi.Router) {
 			r.Delete("/", a.deletePod)
 		})
@@ -59,6 +60,15 @@ func (a *Api) routes() http.Handler {
 
 func (a *Api) health(w http.ResponseWriter, _ *http.Request) {
 	rest.SuccessResponse(w, struct{ Status string }{"UP"})
+}
+
+func (a *Api) listPods(w http.ResponseWriter, r *http.Request) {
+	res, err := a.worker.ListPods(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	rest.SuccessResponse(w, res)
 }
 
 func (a *Api) createPod(w http.ResponseWriter, r *http.Request) {
