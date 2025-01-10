@@ -1,8 +1,10 @@
 package worker
 
 import (
+	"Gorch/pkg/pod"
 	"Gorch/pkg/rest"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -45,9 +47,32 @@ func (a *Api) routes() http.Handler {
 
 	mux.Get("/health", a.health)
 
+	mux.Route("/pods", func(r chi.Router) {
+		r.Post("/", a.createPod)
+		r.Route("/{containerID}", func(r chi.Router) {
+			r.Delete("/", a.deletePod)
+		})
+	})
+
 	return mux
 }
 
 func (a *Api) health(w http.ResponseWriter, _ *http.Request) {
 	rest.SuccessResponse(w, struct{ Status string }{"UP"})
+}
+
+func (a *Api) createPod(w http.ResponseWriter, r *http.Request) {
+	var cr pod.CreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&cr); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	res := a.worker.Start(r.Context(), cr)
+	rest.SuccessResponse(w, res)
+}
+
+func (a *Api) deletePod(w http.ResponseWriter, r *http.Request) {
+	containerID := chi.URLParam(r, "containerID")
+	res := a.worker.Stop(r.Context(), containerID)
+	rest.SuccessResponse(w, res)
 }
