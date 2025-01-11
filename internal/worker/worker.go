@@ -4,6 +4,7 @@ import (
 	"Gorch/pkg/pod"
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
@@ -131,7 +132,7 @@ func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.Client
 	}
 }
 
-func (w *Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse {
+func (w Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse {
 	//Stop container
 	if err := w.client.ContainerStop(ctx, containerID, container.StopOptions{}); err != nil {
 		return pod.ClientResponse{
@@ -156,4 +157,8 @@ func (w *Worker) Stop(ctx context.Context, containerID string) pod.ClientRespons
 		FinishedAt:  time.Now().UTC(),
 	}
 
+}
+
+func (w Worker) Inspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
+	return w.client.ContainerInspect(ctx, containerID)
 }

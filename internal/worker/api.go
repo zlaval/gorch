@@ -55,6 +55,7 @@ func (a *Api) routes() http.Handler {
 		r.Get("/", a.listPods)
 		r.Get("/metrics", a.podMetrics)
 		r.Route("/{containerID}", func(r chi.Router) {
+			r.Get("/", a.inspectPod)
 			r.Delete("/", a.deletePod)
 		})
 	})
@@ -99,4 +100,21 @@ func (a *Api) deletePod(w http.ResponseWriter, r *http.Request) {
 	containerID := chi.URLParam(r, "containerID")
 	res := a.worker.Stop(r.Context(), containerID)
 	rest.SuccessResponse(w, res)
+}
+
+func (a *Api) inspectPod(w http.ResponseWriter, r *http.Request) {
+	containerID := chi.URLParam(r, "containerID")
+	res, err := a.worker.Inspect(r.Context(), containerID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	by, err := json.MarshalIndent(res, "", "\t")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	str := string(by)
+	rest.SuccessResponse(w, str)
 }
