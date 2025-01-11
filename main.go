@@ -1,8 +1,12 @@
 package main
 
-import "Gorch/internal/worker"
+import (
+	"gorch/cmd"
+	"log"
+)
 
 func main() {
-	a := worker.Cmd("worker-1")
-	_ = a.Run()
+	if err := cmd.Execute(); err != nil {
+		log.Fatalf("execution error: %v", err)
+	}
 }

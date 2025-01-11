@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"Gorch/pkg/metrics"
 	"context"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -9,6 +8,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
+	"gorch/pkg/metrics"
 	"log/slog"
 	"slices"
 )

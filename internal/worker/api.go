@@ -1,14 +1,14 @@
 package worker
 
 import (
-	"Gorch/pkg/pod"
-	"Gorch/pkg/rest"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"gorch/pkg/pod"
+	"gorch/pkg/rest"
 	"log"
 	"net/http"
 )

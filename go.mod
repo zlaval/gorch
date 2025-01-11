@@ -1,4 +1,4 @@
-module Gorch
+module gorch
 
 go 1.23
 
