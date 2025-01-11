@@ -1,3 +1,7 @@
+
+### Metrics
+GET http://localhost:8081/metrics
+
 ### Get Pods
 GET http://localhost:8081/pods
 

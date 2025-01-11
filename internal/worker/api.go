@@ -14,12 +14,14 @@ import (
 )
 
 type Api struct {
-	worker Worker
+	worker           Worker
+	metricsCollector MetricsCollector
 }
 
-func NewApi(worker Worker) *Api {
+func NewApi(worker Worker, metricsCollector MetricsCollector) *Api {
 	return &Api{
-		worker: worker,
+		worker:           worker,
+		metricsCollector: metricsCollector,
 	}
 }
 
@@ -46,6 +48,7 @@ func (a *Api) routes() http.Handler {
 	mux.Use(middleware.Recoverer)
 
 	mux.Get("/health", a.health)
+	mux.Get("/metrics", a.metrics)
 
 	mux.Route("/pods", func(r chi.Router) {
 		r.Post("/", a.createPod)
@@ -60,6 +63,11 @@ func (a *Api) routes() http.Handler {
 
 func (a *Api) health(w http.ResponseWriter, _ *http.Request) {
 	rest.SuccessResponse(w, struct{ Status string }{"UP"})
+}
+
+func (a *Api) metrics(w http.ResponseWriter, _ *http.Request) {
+	res := a.metricsCollector.CollectMetrics()
+	rest.SuccessResponse(w, res)
 }
 
 func (a *Api) listPods(w http.ResponseWriter, r *http.Request) {

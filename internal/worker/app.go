@@ -26,7 +26,8 @@ func (c *workerCmd) Run() error {
 	defer cli.Close()
 
 	w := NewWorker(cli)
-	a := NewApi(w)
+	m := NewMetricsCollector()
+	a := NewApi(w, m)
 
 	return a.Run(ctx)
 }
