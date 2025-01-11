@@ -2,6 +2,7 @@ package worker
 
 import (
 	"Gorch/pkg/pod"
+	"bufio"
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
@@ -10,6 +11,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"io"
+	"log/slog"
 	"math"
 	"os"
 	"slices"
@@ -161,4 +163,30 @@ func (w Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse
 
 func (w Worker) Inspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
 	return w.client.ContainerInspect(ctx, containerID)
+}
+
+func (w Worker) Logs(ctx context.Context, containerID string) pod.Logs {
+	res := pod.Logs{
+		ContainerID: containerID,
+	}
+
+	l, err := w.client.ContainerLogs(ctx, containerID, container.LogsOptions{ShowStderr: true, ShowStdout: true, Tail: "100"})
+	if err != nil {
+		return res
+	}
+	defer l.Close()
+
+	r := bufio.NewReader(l)
+
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				slog.Error("error reading log lines", slog.Any("error", err))
+			}
+			break
+		}
+		res.Lines = append(res.Lines, line)
+	}
+	return res
 }

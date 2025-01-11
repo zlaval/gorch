@@ -24,3 +24,6 @@ GET http://localhost:8081/pods/metrics
 
 ### POD Inspect
 GET http://localhost:8081/pods/fae35e988a2d5a9a1445eeada66c341932b30bd243821ee14f8e9cb1fa2ab748
+
+### POD Logs
+GET http://localhost:8081/pods/fae35e988a2d5a9a1445eeada66c341932b30bd243821ee14f8e9cb1fa2ab748/logs

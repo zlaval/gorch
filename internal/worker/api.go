@@ -57,6 +57,7 @@ func (a *Api) routes() http.Handler {
 		r.Route("/{containerID}", func(r chi.Router) {
 			r.Get("/", a.inspectPod)
 			r.Delete("/", a.deletePod)
+			r.Get("/logs", a.podLogs)
 		})
 	})
 
@@ -117,4 +118,10 @@ func (a *Api) inspectPod(w http.ResponseWriter, r *http.Request) {
 
 	str := string(by)
 	rest.SuccessResponse(w, str)
+}
+
+func (a *Api) podLogs(w http.ResponseWriter, r *http.Request) {
+	containerID := chi.URLParam(r, "containerID")
+	res := a.worker.Logs(r.Context(), containerID)
+	rest.SuccessResponse(w, res)
 }

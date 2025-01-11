@@ -38,3 +38,8 @@ type Stats struct {
 	State       string
 	Status      string
 }
+
+type Logs struct {
+	ContainerID string
+	Lines       []string
+}
