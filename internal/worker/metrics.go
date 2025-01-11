@@ -2,6 +2,9 @@ package worker
 
 import (
 	"Gorch/pkg/metrics"
+	"context"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/load"
@@ -11,13 +14,44 @@ import (
 )
 
 type MetricsCollector struct {
+	client *client.Client
 }
 
-func NewMetricsCollector() MetricsCollector {
-	return MetricsCollector{}
+func NewMetricsCollector(client *client.Client) MetricsCollector {
+	return MetricsCollector{
+		client: client,
+	}
 }
 
-func (m MetricsCollector) CollectMetrics() metrics.Metrics {
+func (m MetricsCollector) CollectPodMetrics(ctx context.Context) []metrics.PodStats {
+	containers, err := m.client.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		slog.Error("collect containers", slog.Any("error", err))
+	}
+
+	res := make([]metrics.PodStats, 0, len(containers))
+
+	for c := range slices.Values(containers) {
+		stats := metrics.PodStats{
+			ContainerID: c.ID,
+			State:       c.State,
+		}
+
+		i, err := m.client.ContainerInspect(ctx, c.ID)
+		if err != nil {
+			slog.Error("inspect pod", slog.String("id", c.ID), slog.Any("error", err))
+		} else {
+			stats.Name = i.Name
+			stats.Error = i.State.Error
+		}
+
+		res = append(res, stats)
+	}
+
+	return res
+}
+
+func (m MetricsCollector) CollectNodeMetrics() metrics.Metrics {
 	result := metrics.Metrics{}
 
 	memory, err := mem.VirtualMemory()

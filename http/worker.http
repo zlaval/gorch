@@ -10,7 +10,7 @@ POST http://localhost:8081/pods
 
 {
     "ID": "1",
-    "Name": "my-pod2",
+    "Name": "my-pod",
     "Image": "zalerix/webapp",
     "CPURequest": 100,
     "MemoryRequest": 50
@@ -18,3 +18,6 @@ POST http://localhost:8081/pods
 
 ### Delete pod
 DELETE http://localhost:8081/pods/57ddf1eb8d2fec068d7371b31cd8a32cde7da3876e326ccfbf8bbb9c09f0fb6c
+
+### Pods Metrics
+GET http://localhost:8081/pods/metrics

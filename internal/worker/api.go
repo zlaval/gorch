@@ -53,6 +53,7 @@ func (a *Api) routes() http.Handler {
 	mux.Route("/pods", func(r chi.Router) {
 		r.Post("/", a.createPod)
 		r.Get("/", a.listPods)
+		r.Get("/metrics", a.podMetrics)
 		r.Route("/{containerID}", func(r chi.Router) {
 			r.Delete("/", a.deletePod)
 		})
@@ -66,7 +67,12 @@ func (a *Api) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (a *Api) metrics(w http.ResponseWriter, _ *http.Request) {
-	res := a.metricsCollector.CollectMetrics()
+	res := a.metricsCollector.CollectNodeMetrics()
+	rest.SuccessResponse(w, res)
+}
+
+func (a *Api) podMetrics(w http.ResponseWriter, r *http.Request) {
+	res := a.metricsCollector.CollectPodMetrics(r.Context())
 	rest.SuccessResponse(w, res)
 }
 

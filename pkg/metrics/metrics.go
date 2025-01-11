@@ -10,3 +10,10 @@ type Metrics struct {
 	TotalDiskMB            uint64
 	FreeDiskMB             uint64
 }
+
+type PodStats struct {
+	ContainerID string
+	State       string
+	Error       string
+	Name        string
+}
