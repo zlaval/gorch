@@ -1,0 +1,6 @@
+### Test cmd
+POST http://localhost:8000/command
+
+{
+ "DeploymentID": "2"
+}

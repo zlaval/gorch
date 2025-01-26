@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gorch/internal/controller"
 	"gorch/internal/worker"
 	"log/slog"
 	"os"
@@ -26,6 +27,7 @@ func newRootCommand() *RootCommand {
 
 	c.AddCommand(
 		worker.Cmd(),
+		controller.Cmd(),
 	)
 
 	return c
