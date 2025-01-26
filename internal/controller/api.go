@@ -54,6 +54,6 @@ func (a *Api) command(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println(cmd)
-	res := []string{"Test data"}
+	res := command.Response{Data: []string{"Test data"}}
 	rest.SuccessResponse(w, res)
 }
