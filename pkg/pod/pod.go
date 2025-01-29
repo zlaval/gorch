@@ -31,6 +31,10 @@ type Config struct {
 	MemoryRequest int64
 }
 
+func (c *Config) String() string {
+	return c.Image
+}
+
 type Stats struct {
 	ContainerID string
 	Name        string

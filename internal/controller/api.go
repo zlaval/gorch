@@ -10,6 +10,7 @@ import (
 	"gorch/pkg/command"
 	"gorch/pkg/rest"
 	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -32,6 +33,7 @@ func (a *Api) Run(ctx context.Context) error {
 		}
 	}()
 
+	slog.Info("Server is up and running")
 	<-ctx.Done()
 
 	return s.Shutdown(ctx)
@@ -53,7 +55,7 @@ func (a *Api) command(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println(cmd)
+	fmt.Println(cmd.String())
 	res := command.Response{Data: []string{"Test data"}}
 	rest.SuccessResponse(w, res)
 }

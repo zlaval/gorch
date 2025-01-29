@@ -1,6 +1,9 @@
 package command
 
-import "gorch/pkg/pod"
+import (
+	"fmt"
+	"gorch/pkg/pod"
+)
 
 type Action int
 
@@ -26,6 +29,13 @@ type Command struct {
 
 	DeploymentName string
 	Replicas       int
+}
+
+func (c *Command) String() string {
+	return fmt.Sprintf(
+		"Command: [Action : %d DeploymentID: %s, DeploymentName: %s, PodID: %s, Replicas: %d, Config: %s]",
+		c.Action, c.DeploymentID, c.DeploymentName, c.PodID, c.Replicas, c.Config.String(),
+	)
 }
 
 type Response struct {
