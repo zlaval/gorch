@@ -1,0 +1,13 @@
+spec:
+  name: rest-echo
+  replicas: 2
+  container:
+    image: zalerix/rest-test
+    command: []
+    env:
+      - name: TEST_PROP
+        value: test_value
+    resources:
+      memory: 150
+      cpu: 200
+    containerPort: 4567

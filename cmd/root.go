@@ -30,6 +30,7 @@ func newRootCommand() *RootCommand {
 		worker.Cmd(),
 		controller.Cmd(),
 		cli.NewWorkerCmd(),
+		cli.NewDeploymentCmd(),
 	)
 
 	return c
