@@ -25,9 +25,36 @@ func NewDeploymentCmd() *cobra.Command {
 
 	c.AddCommand(
 		newDeployCmd(),
+		newHistoryCmd(),
 	)
 
 	return c.Command
+}
+
+type historyCmd struct {
+	*cobra.Command
+}
+
+func newHistoryCmd() *cobra.Command {
+	c := &historyCmd{}
+	c.Command = &cobra.Command{
+		Use:     "history (deployment-id)",
+		Short:   "history of the deployment",
+		Aliases: []string{"h"},
+		Args:    cobra.ExactArgs(1),
+		Example: "gorch deployment history 123",
+		RunE:    c.run,
+	}
+
+	return c.Command
+}
+
+func (c *historyCmd) run(_ *cobra.Command, args []string) error {
+	cmd := command.Command{
+		DeploymentID: args[0],
+		Action:       command.History,
+	}
+	return ExecuteCommand(cmd)
 }
 
 type deployCmd struct {
