@@ -8,6 +8,7 @@ import (
 	"gorch/pkg/command"
 	"gorch/pkg/pod"
 	"os"
+	"slices"
 )
 
 type deploymentCmd struct {
@@ -33,6 +34,15 @@ type deployCmd struct {
 	*cobra.Command
 
 	filePath string
+
+	name          string
+	replicas      int
+	image         string
+	command       []string
+	env           []string
+	memory        int64
+	cpu           int64
+	containerPort string
 }
 
 func newDeployCmd() *cobra.Command {
@@ -49,41 +59,84 @@ func newDeployCmd() *cobra.Command {
 }
 
 func (c *deployCmd) init() {
-	c.Flags().StringVarP(&c.filePath, "file", "f", "", "-f file_path")
-	_ = c.MarkFlagRequired("file")
+	fs := c.Flags()
+
+	fs.StringVarP(&c.filePath, "file", "f", "", "-f file_path")
+
+	fs.StringVarP(&c.name, "name", "n", "", "name of the deployment")
+	fs.IntVarP(&c.replicas, "replicas", "r", 1, "number of pods")
+	fs.StringVarP(&c.image, "image", "i", "", "container image")
+	fs.StringSliceVarP(&c.command, "cmd", "c", []string{}, "command array. format: -cmd=\"val1,val2\"")
+	fs.StringSliceVarP(&c.env, "env", "e", []string{}, "environment array. format: -env=\"key1=val1,key2=val2\"")
+	fs.Int64VarP(&c.memory, "memory", "m", 0, "memory limit of a pod. 0 means unlimited")
+	fs.Int64VarP(&c.cpu, "cpu", "u", 0, "cpu limit of the pod. 0 means unlimited")
+	fs.StringVarP(&c.containerPort, "port", "p", "80", "exposed port of the pod")
+
+	c.MarkFlagsOneRequired("file", "name")
+	c.MarkFlagsRequiredTogether("name", "image")
+	c.markFlagsMutuallyExclusiveTo("file",
+		"name", "replicas", "cmd", "env", "memory", "cpu", "port",
+	)
+
+}
+
+func (c *deployCmd) markFlagsMutuallyExclusiveTo(flag string, mes ...string) {
+	for m := range slices.Values(mes) {
+		c.MarkFlagsMutuallyExclusive(flag, m)
+	}
 }
 
 func (c *deployCmd) run(_ *cobra.Command, _ []string) error {
-	b, err := os.ReadFile(c.filePath)
-	if err != nil {
-		return fmt.Errorf("read file: %w", err)
-	}
-	var d DeploymentYaml
-	if err := yaml.Unmarshal(b, &d); err != nil {
-		return fmt.Errorf("parse file %w", err)
-	}
+	var cmd command.Command
 
-	cfg := d.Spec.Container
+	if c.filePath != "" {
+		b, err := os.ReadFile(c.filePath)
+		if err != nil {
+			return fmt.Errorf("read file: %w", err)
+		}
+		var d DeploymentYaml
+		if err := yaml.Unmarshal(b, &d); err != nil {
+			return fmt.Errorf("parse file %w", err)
+		}
 
-	envs := make([]string, len(cfg.Env))
-	for i, e := range cfg.Env {
-		envs[i] = fmt.Sprintf("%s=%s", e.Name, e.Value)
-	}
+		cfg := d.Spec.Container
 
-	cmd := command.Command{
-		Action:         command.Create,
-		Replicas:       d.Spec.Replicas,
-		DeploymentName: d.Spec.Name,
-		Config: pod.Config{
-			Image: cfg.Image,
-			Cmd:   cfg.Command,
-			Env:   envs,
-			ExposedPorts: nat.PortSet{
-				nat.Port(cfg.ContainerPort): struct{}{},
+		envs := make([]string, len(cfg.Env))
+		for i, e := range cfg.Env {
+			envs[i] = fmt.Sprintf("%s=%s", e.Name, e.Value)
+		}
+
+		cmd = command.Command{
+			Action:         command.Create,
+			Replicas:       d.Spec.Replicas,
+			DeploymentName: d.Spec.Name,
+			Config: pod.Config{
+				Image: cfg.Image,
+				Cmd:   cfg.Command,
+				Env:   envs,
+				ExposedPorts: nat.PortSet{
+					nat.Port(cfg.ContainerPort): struct{}{},
+				},
+				CPURequest:    cfg.Resources.CPU,
+				MemoryRequest: cfg.Resources.Memory,
 			},
-			CPURequest:    cfg.Resources.CPU,
-			MemoryRequest: cfg.Resources.Memory,
-		},
+		}
+	} else {
+		cmd = command.Command{
+			Action:         command.Create,
+			Replicas:       c.replicas,
+			DeploymentName: c.name,
+			Config: pod.Config{
+				Image: c.image,
+				Cmd:   c.command,
+				Env:   c.env,
+				ExposedPorts: nat.PortSet{
+					nat.Port(c.containerPort): struct{}{},
+				},
+				CPURequest:    c.cpu,
+				MemoryRequest: c.memory,
+			},
+		}
 	}
 
 	return ExecuteCommand(cmd)
