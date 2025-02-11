@@ -24,8 +24,11 @@ func NewDeploymentCmd() *cobra.Command {
 	}
 
 	c.AddCommand(
+		newListDeployCmd(),
 		newDeployCmd(),
 		newHistoryCmd(),
+		newDeleteCmd(),
+		newScaleCmd(),
 	)
 
 	return c.Command
@@ -53,6 +56,88 @@ func (c *historyCmd) run(_ *cobra.Command, args []string) error {
 	cmd := command.Command{
 		DeploymentID: args[0],
 		Action:       command.History,
+	}
+	return ExecuteCommand(cmd)
+}
+
+type listDeployCmd struct {
+	*cobra.Command
+}
+
+func newListDeployCmd() *cobra.Command {
+	c := &listDeployCmd{}
+	c.Command = &cobra.Command{
+		Use:     "list",
+		Short:   "lists all deployments",
+		Aliases: []string{"l"},
+		RunE:    c.run,
+	}
+
+	return c.Command
+}
+
+func (c *listDeployCmd) run(_ *cobra.Command, _ []string) error {
+	cmd := command.Command{
+		Action: command.ListDeployments,
+	}
+	return ExecuteCommand(cmd)
+}
+
+type deleteCmd struct {
+	*cobra.Command
+}
+
+func newDeleteCmd() *cobra.Command {
+	c := &deleteCmd{}
+	c.Command = &cobra.Command{
+		Use:     "delete (deployment-id)",
+		Short:   "deletes the deployment and all associated pods",
+		Args:    cobra.ExactArgs(1),
+		Example: "gorch deployment delete 123",
+		RunE:    c.run,
+	}
+
+	return c.Command
+}
+
+func (c *deleteCmd) run(_ *cobra.Command, args []string) error {
+	cmd := command.Command{
+		DeploymentID: args[0],
+		Action:       command.Delete,
+	}
+	return ExecuteCommand(cmd)
+}
+
+type scaleCmd struct {
+	*cobra.Command
+	replicas int
+}
+
+func newScaleCmd() *cobra.Command {
+	c := &scaleCmd{}
+	c.Command = &cobra.Command{
+		Use:     "scale (deployment-id)",
+		Short:   "scales the pods number to the given value",
+		Args:    cobra.ExactArgs(1),
+		Example: "gorch deployment scale 123 -r 3",
+		RunE:    c.run,
+	}
+
+	c.init()
+
+	return c.Command
+}
+
+func (c *scaleCmd) init() {
+	c.Flags().IntVarP(&c.replicas, "replicas", "r", 1, "desired number of pods")
+	_ = c.MarkFlagRequired("replicas")
+}
+
+func (c *scaleCmd) run(_ *cobra.Command, args []string) error {
+	cmd := command.Command{
+		DeploymentID: args[0],
+		Action:       command.Scale,
+		Replicas:     c.replicas,
 	}
 	return ExecuteCommand(cmd)
 }
