@@ -18,6 +18,13 @@ func Cmd() *cobra.Command {
 }
 
 func (c controllerCmd) run(cmd *cobra.Command, _ []string) error {
+
+	db, err := NewDatabase()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
 	api := NewApi()
 	return api.Run(cmd.Context())
 }
