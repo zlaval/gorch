@@ -31,6 +31,7 @@ func newRootCommand() *RootCommand {
 		controller.Cmd(),
 		cli.NewWorkerCmd(),
 		cli.NewDeploymentCmd(),
+		cli.NewPodCmd(),
 	)
 
 	return c
