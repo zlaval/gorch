@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"gorch/pkg/command"
+	"gorch/pkg/registry"
 	"gorch/pkg/rest"
 	"log"
 	"log/slog"
@@ -15,10 +16,13 @@ import (
 )
 
 type Api struct {
+	db *Database
 }
 
-func NewApi() *Api {
-	return &Api{}
+func NewApi(db *Database) *Api {
+	return &Api{
+		db: db,
+	}
 }
 
 func (a *Api) Run(ctx context.Context) error {
@@ -45,8 +49,35 @@ func (a *Api) routes() http.Handler {
 	mux.Use(middleware.Recoverer)
 
 	mux.Post("/command", a.command)
+	mux.Post("/register", a.registerWorker)
 
 	return mux
+}
+
+func (a *Api) registerWorker(w http.ResponseWriter, r *http.Request) {
+	var wr registry.WorkerRegRequest
+	if err := json.NewDecoder(r.Body).Decode(&wr); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	worker := WorkerEntity{
+		Name:    wr.Name,
+		Address: wr.Address,
+		IP:      wr.IP,
+		Port:    wr.Port,
+		Status:  WorkerUp,
+	}
+
+	if err := a.db.SaveWorker(worker); err != nil {
+		slog.Error("register worker", slog.Any("error", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Worker has been registered", slog.String("name", wr.Name))
+
+	rest.SuccessResponse(w, "OK")
 }
 
 func (a *Api) command(w http.ResponseWriter, r *http.Request) {

@@ -14,12 +14,14 @@ import (
 )
 
 type Api struct {
+	port             int
 	worker           Worker
 	metricsCollector MetricsCollector
 }
 
-func NewApi(worker Worker, metricsCollector MetricsCollector) *Api {
+func NewApi(port int, worker Worker, metricsCollector MetricsCollector) *Api {
 	return &Api{
+		port:             port,
 		worker:           worker,
 		metricsCollector: metricsCollector,
 	}
@@ -27,7 +29,7 @@ func NewApi(worker Worker, metricsCollector MetricsCollector) *Api {
 
 func (a *Api) Run(ctx context.Context) error {
 	s := &http.Server{
-		Addr:    fmt.Sprintf(":%d", 8081),
+		Addr:    fmt.Sprintf(":%d", a.port),
 		Handler: a.routes(),
 	}
 

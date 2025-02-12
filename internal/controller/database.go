@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"go.etcd.io/bbolt"
 	"log/slog"
@@ -54,4 +55,18 @@ func (d *Database) migrate() error {
 
 func (d *Database) Close() error {
 	return d.db.Close()
+}
+
+func (d *Database) SaveWorker(worker WorkerEntity) error {
+	data, err := json.Marshal(worker)
+	if err != nil {
+		return fmt.Errorf("mashal data: %w", err)
+	}
+
+	return d.db.Update(
+		func(tx *bbolt.Tx) error {
+			bucket := tx.Bucket([]byte(Workers))
+			return bucket.Put([]byte(worker.Name), data)
+		},
+	)
 }

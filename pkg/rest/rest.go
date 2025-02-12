@@ -41,3 +41,7 @@ func ExtractBody[T any](resp *http.Response) (T, error) {
 	}
 	return r, nil
 }
+
+func OmitBody(_ *http.Response) (any, error) {
+	return nil, nil
+}
