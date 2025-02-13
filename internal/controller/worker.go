@@ -18,3 +18,6 @@ type WorkerEntity struct {
 	Status  WorkerStatus
 	Metrics metrics.Metrics
 }
+
+type WorkerClient struct {
+}

@@ -20,6 +20,8 @@ func Cmd() *cobra.Command {
 func (c controllerCmd) run(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
+	wc := &WorkerClient{}
+
 	db, err := NewDatabase()
 	if err != nil {
 		return err
@@ -27,8 +29,8 @@ func (c controllerCmd) run(cmd *cobra.Command, _ []string) error {
 	defer db.Close()
 
 	sc := NewScheduler(db)
-
-	api := NewApi(db, sc)
+	cp := NewCommandProcessor(db, sc, wc)
+	api := NewApi(db, cp)
 
 	//Starts async scheduler
 	go sc.Run(ctx)
