@@ -17,11 +17,13 @@ import (
 
 type Api struct {
 	db *Database
+	sc *Scheduler
 }
 
-func NewApi(db *Database) *Api {
+func NewApi(db *Database, sc *Scheduler) *Api {
 	return &Api{
 		db: db,
+		sc: sc,
 	}
 }
 
@@ -86,7 +88,11 @@ func (a *Api) command(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	//TODO remove this mock task
 	fmt.Println(cmd.String())
+	a.sc.Add(Task{})
+
 	res := command.Response{Data: []string{"Test data"}}
 	rest.SuccessResponse(w, res)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.etcd.io/bbolt"
 	"log/slog"
+	"slices"
 )
 
 type Collection string
@@ -69,4 +70,52 @@ func (d *Database) SaveWorker(worker WorkerEntity) error {
 			return bucket.Put([]byte(worker.Name), data)
 		},
 	)
+}
+
+func (d *Database) LoadWorkers() ([]WorkerEntity, error) {
+	jsonData, err := d.loadAll(Workers)
+	if err != nil {
+		return nil, fmt.Errorf("load workers: %w", err)
+	}
+
+	return unmarshalListToType[WorkerEntity](jsonData)
+}
+
+func (d *Database) loadAll(collection Collection) ([]any, error) {
+	result := make([]any, 0)
+	err := d.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(collection))
+		return bucket.ForEach(func(k, v []byte) error {
+			result = append(result, v)
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("load entries: %w", err)
+	}
+	return result, nil
+}
+
+func unmarshalListToType[T any](data []any) ([]T, error) {
+	result := make([]T, 0, len(data))
+
+	for d := range slices.Values(data) {
+		entry, err := unmarshalToType[T](d)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, entry)
+	}
+
+	return result, nil
+}
+
+func unmarshalToType[T any](data any) (T, error) {
+	var entry T
+	err := json.Unmarshal(data.([]byte), &entry)
+	if err != nil {
+		return *new(T), fmt.Errorf("unmarshal entry: %w", err)
+	}
+	return entry, nil
 }
