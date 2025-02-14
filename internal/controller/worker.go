@@ -1,6 +1,12 @@
 package controller
 
-import "gorch/pkg/metrics"
+import (
+	"fmt"
+	"gorch/pkg/command"
+	"gorch/pkg/metrics"
+	"gorch/pkg/pod"
+	"gorch/pkg/rest"
+)
 
 type WorkerStatus int
 
@@ -20,4 +26,16 @@ type WorkerEntity struct {
 }
 
 type WorkerClient struct {
+}
+
+func (w WorkerClient) CreatePod(workerAddress, id string, c command.Command) (pod.ClientResponse, error) {
+	return rest.Post(
+		fmt.Sprintf("%s/pods", workerAddress),
+		pod.CreateRequest{
+			Config: c.Config,
+			ID:     id,
+			Name:   c.DeploymentName,
+		},
+		rest.ExtractBody[pod.ClientResponse],
+	)
 }

@@ -1,6 +1,9 @@
 package controller
 
-import "gorch/pkg/command"
+import (
+	"fmt"
+	"gorch/pkg/command"
+)
 
 type CommandProcessor struct {
 	db        *Database
@@ -24,7 +27,7 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	var res []string
 	switch cmd.Action {
 	case command.Create:
-		return []string{"test"}, nil
+		return p.create(cmd)
 	case command.ListPods:
 		return []string{"test"}, nil
 	case command.Delete:
@@ -44,4 +47,9 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	}
 
 	return res, nil
+}
+
+func (p *CommandProcessor) create(cmd command.Command) ([]string, error) {
+	p.scheduler.Add(Task{cmd})
+	return []string{fmt.Sprintf("Deployment has been created")}, nil
 }

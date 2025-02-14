@@ -28,7 +28,7 @@ func (c controllerCmd) run(cmd *cobra.Command, _ []string) error {
 	}
 	defer db.Close()
 
-	sc := NewScheduler(db)
+	sc := NewScheduler(db, wc)
 	cp := NewCommandProcessor(db, sc, wc)
 	api := NewApi(db, cp)
 

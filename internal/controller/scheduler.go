@@ -2,22 +2,26 @@ package controller
 
 import (
 	"context"
-	"fmt"
+	"github.com/renstrom/shortuuid"
+	"gorch/pkg/command"
 	"log/slog"
 )
 
 type Task struct {
+	cmd command.Command
 }
 
 type Scheduler struct {
-	ch chan Task
-	db *Database
+	ch     chan Task
+	db     *Database
+	client *WorkerClient
 }
 
-func NewScheduler(db *Database) *Scheduler {
+func NewScheduler(db *Database, client *WorkerClient) *Scheduler {
 	return &Scheduler{
-		ch: make(chan Task),
-		db: db,
+		ch:     make(chan Task),
+		db:     db,
+		client: client,
 	}
 }
 
@@ -50,6 +54,9 @@ func (s *Scheduler) schedule(task Task) {
 
 	selectedWorker := workers[0]
 
-	fmt.Println(selectedWorker)
-	fmt.Println(task)
+	_, err = s.client.CreatePod(selectedWorker.Address, shortuuid.New(), task.cmd)
+	if err != nil {
+		slog.Error("creating pod", slog.Any("error", err))
+	}
+
 }
