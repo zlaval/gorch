@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"go.etcd.io/bbolt"
 	"gorch/pkg/deployment"
+	"gorch/pkg/pod"
 	"log/slog"
 	"slices"
+	"time"
 )
 
 type Collection string
@@ -14,6 +17,7 @@ type Collection string
 const (
 	Workers     Collection = "workers"
 	Deployments Collection = "deployments"
+	Pods        Collection = "pods"
 )
 
 type Database struct {
@@ -53,6 +57,11 @@ func (d *Database) migrate() error {
 	_, err = tx.CreateBucket([]byte(Deployments))
 	if err != nil {
 		slog.Info("migration", slog.Any("db", Deployments), slog.Any("message", err))
+	}
+
+	_, err = tx.CreateBucket([]byte(Pods))
+	if err != nil {
+		slog.Info("migration", slog.Any("db", Pods), slog.Any("message", err))
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -142,4 +151,26 @@ func (d *Database) LoadDeployments() ([]deployment.Deployment, error) {
 		return nil, fmt.Errorf("load deployments: %w", err)
 	}
 	return unmarshalListToType[deployment.Deployment](res)
+}
+
+func (d *Database) SavePod(pod pod.Pod) error {
+	pod.LastUpdated = time.Now().UTC()
+	return d.save(Pods, pod.ID, pod)
+}
+
+func (d *Database) LoadPodsByDeploymentName(name []byte) ([]pod.Pod, error) {
+	raw := make([]any, 0)
+
+	err := d.db.View(func(tx *bbolt.Tx) error {
+		c := tx.Bucket([]byte(Pods)).Cursor()
+		for k, v := c.Seek(name); k != nil && bytes.HasPrefix(k, name); k, v = c.Next() {
+			raw = append(raw, v)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("load pods by deployment %s: %w", name, err)
+	}
+
+	return unmarshalListToType[pod.Pod](raw)
 }

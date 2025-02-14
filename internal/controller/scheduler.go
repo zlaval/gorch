@@ -3,12 +3,13 @@ package controller
 import (
 	"context"
 	"gorch/pkg/deployment"
+	"gorch/pkg/pod"
 	"log/slog"
 )
 
 type Task struct {
 	Deployment deployment.Deployment
-	PodID      string
+	Pod        pod.Pod
 }
 
 type Scheduler struct {
@@ -54,9 +55,26 @@ func (s *Scheduler) schedule(task Task) {
 
 	selectedWorker := workers[0]
 
-	_, err = s.client.CreatePod(selectedWorker.Address, task.PodID, task.Deployment)
+	p := task.Pod
+
+	res, err := s.client.CreatePod(selectedWorker.Address, p.ID, task.Deployment)
 	if err != nil {
 		slog.Error("creating pod", slog.Any("error", err))
+
+		p.State = "dead"
+		_ = s.db.SavePod(p)
+		return
+	}
+
+	p.ContainerID = res.ContainerID
+	p.StartedAt = res.StartedAt
+	p.FinishedAt = res.FinishedAt
+	p.Worker = selectedWorker.Name
+	p.IP = res.IP
+	p.EphemeralPorts = res.EphemeralPorts
+
+	if err := s.db.SavePod(p); err != nil {
+		slog.Error("save pod", slog.Any("error", err), slog.Any("id", p.ID))
 	}
 
 }

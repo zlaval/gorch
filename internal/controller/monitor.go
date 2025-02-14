@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/renstrom/shortuuid"
 	"gorch/pkg/deployment"
+	"gorch/pkg/pod"
 	"log/slog"
 	"slices"
 	"time"
@@ -46,8 +47,19 @@ func (m Monitor) monitor() {
 		}
 
 		for i := 0; i < d.Replicas; i++ {
-			id := fmt.Sprintf("%s-%s", d.Name, shortuuid.New())
-			m.scheduler.Add(Task{d, id})
+			p := pod.Pod{
+				ID:           fmt.Sprintf("%s-%s", d.Name, shortuuid.New()),
+				DeploymentID: d.ID,
+				State:        "created",
+			}
+
+			err := m.db.SavePod(p)
+			if err != nil {
+				slog.Error("save pod", slog.Any("error", err), slog.Any("deploymentID", d.ID))
+				continue
+			}
+
+			m.scheduler.Add(Task{d, p})
 		}
 
 		//Temporary solution:

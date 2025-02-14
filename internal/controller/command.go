@@ -5,6 +5,8 @@ import (
 	"github.com/renstrom/shortuuid"
 	"gorch/pkg/command"
 	"gorch/pkg/deployment"
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -32,7 +34,7 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	case command.Create:
 		return p.create(cmd)
 	case command.ListPods:
-		return []string{"test"}, nil
+		return p.listPods(cmd)
 	case command.Delete:
 		return []string{"test"}, nil
 	case command.Scale:
@@ -46,7 +48,7 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	case command.Workers:
 		return []string{"test"}, nil
 	case command.ListDeployments:
-		return []string{"test"}, nil
+		return p.deployments()
 	}
 
 	return res, nil
@@ -71,4 +73,54 @@ func (p *CommandProcessor) create(cmd command.Command) ([]string, error) {
 	}
 
 	return []string{fmt.Sprintf("Deployment has been created")}, nil
+}
+
+func (p *CommandProcessor) deployments() ([]string, error) {
+	deployments, err := p.db.LoadDeployments()
+	if err != nil {
+		return nil, fmt.Errorf("loading deployments: %w", err)
+	}
+
+	res := make([]string, 0)
+	res = append(res, "Name		Status		Replicas	Created			ID")
+	for d := range slices.Values(deployments) {
+		line := fmt.Sprintf("%s\t%s\t\t%d\t\t%s\t%s\t",
+			d.Name, d.State, d.Replicas, d.CreatedAt.Format(time.DateTime), d.ID,
+		)
+		res = append(res, line)
+	}
+	return res, nil
+}
+
+func (p *CommandProcessor) listPods(cmd command.Command) ([]string, error) {
+	res := make([]string, 0)
+	res = append(res, "Name					Deployment	Status		Worker		IP		ContainerPorts		EpheremarPorts		Started")
+
+	deployments, err := p.db.LoadDeployments()
+	if err != nil {
+		return nil, err
+	}
+
+	for d := range slices.Values(deployments) {
+		pods, err := p.db.LoadPodsByDeploymentName([]byte(d.Name))
+		if err != nil {
+			return nil, err
+		}
+		for p := range slices.Values(pods) {
+
+			var containerPorts []string
+			for port := range d.Config.ExposedPorts {
+				containerPorts = append(containerPorts, string(port))
+			}
+
+			line := fmt.Sprintf("%s\t%s\t%s\t\t%s\t\t%s\t%s\t\t\t%s\t\t\t%s",
+				p.ID, d.Name, p.State, p.Worker, p.IP,
+				strings.Join(containerPorts, ","),
+				strings.Join(p.EphemeralPorts, ","),
+				p.StartedAt.Format(time.DateTime),
+			)
+			res = append(res, line)
+		}
+	}
+	return res, nil
 }

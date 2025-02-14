@@ -47,3 +47,20 @@ type Logs struct {
 	ContainerID string
 	Lines       []string
 }
+
+type Pod struct {
+	ID              string
+	DeploymentID    string
+	State           string
+	MarkedForDelete bool
+	Deleted         bool
+
+	Worker         string
+	IP             string
+	EphemeralPorts []string
+
+	ContainerID string
+	StartedAt   time.Time
+	FinishedAt  time.Time
+	LastUpdated time.Time
+}
