@@ -1,6 +1,6 @@
 spec:
   name: rest-echo
-  replicas: 2
+  replicas: 3
   container:
     image: zalerix/rest-test
     command: []

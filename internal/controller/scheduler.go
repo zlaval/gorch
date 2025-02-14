@@ -2,13 +2,13 @@ package controller
 
 import (
 	"context"
-	"github.com/renstrom/shortuuid"
-	"gorch/pkg/command"
+	"gorch/pkg/deployment"
 	"log/slog"
 )
 
 type Task struct {
-	cmd command.Command
+	Deployment deployment.Deployment
+	PodID      string
 }
 
 type Scheduler struct {
@@ -54,7 +54,7 @@ func (s *Scheduler) schedule(task Task) {
 
 	selectedWorker := workers[0]
 
-	_, err = s.client.CreatePod(selectedWorker.Address, shortuuid.New(), task.cmd)
+	_, err = s.client.CreatePod(selectedWorker.Address, task.PodID, task.Deployment)
 	if err != nil {
 		slog.Error("creating pod", slog.Any("error", err))
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go.etcd.io/bbolt"
+	"gorch/pkg/deployment"
 	"log/slog"
 	"slices"
 )
@@ -11,7 +12,8 @@ import (
 type Collection string
 
 const (
-	Workers Collection = "workers"
+	Workers     Collection = "workers"
+	Deployments Collection = "deployments"
 )
 
 type Database struct {
@@ -47,6 +49,12 @@ func (d *Database) migrate() error {
 	if err != nil {
 		slog.Info("migration", slog.Any("db", Workers), slog.Any("message", err))
 	}
+
+	_, err = tx.CreateBucket([]byte(Deployments))
+	if err != nil {
+		slog.Info("migration", slog.Any("db", Deployments), slog.Any("message", err))
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -58,27 +66,18 @@ func (d *Database) Close() error {
 	return d.db.Close()
 }
 
-func (d *Database) SaveWorker(worker WorkerEntity) error {
-	data, err := json.Marshal(worker)
+func (d *Database) save(collection Collection, id string, entry any) error {
+	data, err := json.Marshal(entry)
 	if err != nil {
 		return fmt.Errorf("mashal data: %w", err)
 	}
 
 	return d.db.Update(
 		func(tx *bbolt.Tx) error {
-			bucket := tx.Bucket([]byte(Workers))
-			return bucket.Put([]byte(worker.Name), data)
+			bucket := tx.Bucket([]byte(collection))
+			return bucket.Put([]byte(id), data)
 		},
 	)
-}
-
-func (d *Database) LoadWorkers() ([]WorkerEntity, error) {
-	jsonData, err := d.loadAll(Workers)
-	if err != nil {
-		return nil, fmt.Errorf("load workers: %w", err)
-	}
-
-	return unmarshalListToType[WorkerEntity](jsonData)
 }
 
 func (d *Database) loadAll(collection Collection) ([]any, error) {
@@ -118,4 +117,29 @@ func unmarshalToType[T any](data any) (T, error) {
 		return *new(T), fmt.Errorf("unmarshal entry: %w", err)
 	}
 	return entry, nil
+}
+
+func (d *Database) SaveWorker(worker WorkerEntity) error {
+	return d.save(Workers, worker.Name, worker)
+}
+
+func (d *Database) LoadWorkers() ([]WorkerEntity, error) {
+	jsonData, err := d.loadAll(Workers)
+	if err != nil {
+		return nil, fmt.Errorf("load workers: %w", err)
+	}
+
+	return unmarshalListToType[WorkerEntity](jsonData)
+}
+
+func (d *Database) SaveDeployment(deployment deployment.Deployment) error {
+	return d.save(Deployments, deployment.ID, deployment)
+}
+
+func (d *Database) LoadDeployments() ([]deployment.Deployment, error) {
+	res, err := d.loadAll(Deployments)
+	if err != nil {
+		return nil, fmt.Errorf("load deployments: %w", err)
+	}
+	return unmarshalListToType[deployment.Deployment](res)
 }

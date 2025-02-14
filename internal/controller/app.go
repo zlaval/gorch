@@ -29,11 +29,12 @@ func (c controllerCmd) run(cmd *cobra.Command, _ []string) error {
 	defer db.Close()
 
 	sc := NewScheduler(db, wc)
+	mo := NewMonitor(db, sc)
 	cp := NewCommandProcessor(db, sc, wc)
 	api := NewApi(db, cp)
 
-	//Starts async scheduler
 	go sc.Run(ctx)
+	go mo.Run(ctx)
 
 	return api.Run(ctx)
 }

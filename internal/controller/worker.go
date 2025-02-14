@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-	"gorch/pkg/command"
+	"gorch/pkg/deployment"
 	"gorch/pkg/metrics"
 	"gorch/pkg/pod"
 	"gorch/pkg/rest"
@@ -28,13 +28,13 @@ type WorkerEntity struct {
 type WorkerClient struct {
 }
 
-func (w WorkerClient) CreatePod(workerAddress, id string, c command.Command) (pod.ClientResponse, error) {
+func (w WorkerClient) CreatePod(workerAddress, id string, d deployment.Deployment) (pod.ClientResponse, error) {
 	return rest.Post(
 		fmt.Sprintf("%s/pods", workerAddress),
 		pod.CreateRequest{
-			Config: c.Config,
+			Config: d.Config,
 			ID:     id,
-			Name:   c.DeploymentName,
+			Name:   d.Name,
 		},
 		rest.ExtractBody[pod.ClientResponse],
 	)

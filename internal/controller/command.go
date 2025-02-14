@@ -2,7 +2,10 @@ package controller
 
 import (
 	"fmt"
+	"github.com/renstrom/shortuuid"
 	"gorch/pkg/command"
+	"gorch/pkg/deployment"
+	"time"
 )
 
 type CommandProcessor struct {
@@ -50,6 +53,22 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 }
 
 func (p *CommandProcessor) create(cmd command.Command) ([]string, error) {
-	p.scheduler.Add(Task{cmd})
+	createdAt := time.Now().UTC()
+	d := deployment.Deployment{
+		ID:        shortuuid.New(),
+		Name:      cmd.DeploymentName,
+		Replicas:  cmd.Replicas,
+		State:     deployment.Created,
+		CreatedAt: createdAt,
+		Config:    cmd.Config,
+		History: []string{
+			fmt.Sprintf("created %s", createdAt.Format(time.DateTime)),
+		},
+	}
+
+	if err := p.db.SaveDeployment(d); err != nil {
+		return nil, fmt.Errorf("save deployment: %w", err)
+	}
+
 	return []string{fmt.Sprintf("Deployment has been created")}, nil
 }
