@@ -16,6 +16,15 @@ func SuccessResponse(w http.ResponseWriter, data any) {
 	_ = json.NewEncoder(w).Encode(&data)
 }
 
+func Get[T any](url string, fn BodyParserFunc[T]) (T, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return *new(T), fmt.Errorf("get: %w", err)
+	}
+	defer resp.Body.Close()
+	return fn(resp)
+}
+
 func Post[T any](url string, req any, fn BodyParserFunc[T]) (T, error) {
 	j, err := json.Marshal(req)
 	if err != nil {

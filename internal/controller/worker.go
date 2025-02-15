@@ -39,3 +39,13 @@ func (w WorkerClient) CreatePod(workerAddress, id string, d deployment.Deploymen
 		rest.ExtractBody[pod.ClientResponse],
 	)
 }
+
+func (w WorkerClient) InspectPod(workerAddress, containerID string) (string, error) {
+	url := fmt.Sprintf("%s/pods/%s", workerAddress, containerID)
+	return rest.Get(url, rest.ExtractBody[string])
+}
+
+func (w WorkerClient) PodLogs(workerAddress, containerID string) (pod.Logs, error) {
+	url := fmt.Sprintf("%s/pods/%s/logs", workerAddress, containerID)
+	return rest.Get(url, rest.ExtractBody[pod.Logs])
+}

@@ -40,9 +40,9 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	case command.Scale:
 		return []string{"test"}, nil
 	case command.Inspect:
-		return []string{"test"}, nil
+		return p.inspect(cmd)
 	case command.Log:
-		return []string{"test"}, nil
+		return p.logs(cmd)
 	case command.History:
 		return []string{"test"}, nil
 	case command.Workers:
@@ -123,4 +123,44 @@ func (p *CommandProcessor) listPods(cmd command.Command) ([]string, error) {
 		}
 	}
 	return res, nil
+}
+
+func (p *CommandProcessor) inspect(cmd command.Command) ([]string, error) {
+	podId := cmd.PodID
+	pod, err := p.db.LoadPod(podId)
+	if err != nil {
+		return nil, err
+	}
+
+	worker, err := p.db.LoadWorker(pod.Worker)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := p.client.InspectPod(worker.Address, pod.ContainerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{r}, nil
+}
+
+func (p *CommandProcessor) logs(cmd command.Command) ([]string, error) {
+	podId := cmd.PodID
+	pod, err := p.db.LoadPod(podId)
+	if err != nil {
+		return nil, err
+	}
+
+	worker, err := p.db.LoadWorker(pod.Worker)
+	if err != nil {
+		return nil, err
+	}
+
+	logs, err := p.client.PodLogs(worker.Address, pod.ContainerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return logs.Lines, nil
 }

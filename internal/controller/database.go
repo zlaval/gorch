@@ -174,3 +174,39 @@ func (d *Database) LoadPodsByDeploymentName(name []byte) ([]pod.Pod, error) {
 
 	return unmarshalListToType[pod.Pod](raw)
 }
+
+func (d *Database) LoadPod(id string) (*pod.Pod, error) {
+	var raw []byte
+	err := d.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(Pods))
+		raw = bucket.Get([]byte(id))
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("load pod: %w", err)
+	}
+
+	p, err := unmarshalToType[pod.Pod](raw)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal pod: %w", err)
+	}
+	return &p, nil
+}
+
+func (d *Database) LoadWorker(id string) (*WorkerEntity, error) {
+	var raw []byte
+	err := d.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(Workers))
+		raw = bucket.Get([]byte(id))
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("load worker: %w", err)
+	}
+
+	w, err := unmarshalToType[WorkerEntity](raw)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal worker: %w", err)
+	}
+	return &w, nil
+}
