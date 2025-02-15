@@ -36,7 +36,7 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	case command.ListPods:
 		return p.listPods(cmd)
 	case command.Delete:
-		return []string{"test"}, nil
+		return p.deleteDeployment(cmd)
 	case command.Scale:
 		return []string{"test"}, nil
 	case command.Inspect:
@@ -163,4 +163,21 @@ func (p *CommandProcessor) logs(cmd command.Command) ([]string, error) {
 	}
 
 	return logs.Lines, nil
+}
+
+func (p *CommandProcessor) deleteDeployment(cmd command.Command) ([]string, error) {
+	d, err := p.db.LoadDeployment(cmd.DeploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	d.State = deployment.Deleted
+	if err := p.db.SaveDeployment(*d); err != nil {
+		return nil, err
+	}
+
+	return []string{
+		fmt.Sprintf("%s deployment scheduled to deletion", d.Name),
+	}, nil
+
 }

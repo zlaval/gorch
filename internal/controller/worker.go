@@ -49,3 +49,8 @@ func (w WorkerClient) PodLogs(workerAddress, containerID string) (pod.Logs, erro
 	url := fmt.Sprintf("%s/pods/%s/logs", workerAddress, containerID)
 	return rest.Get(url, rest.ExtractBody[pod.Logs])
 }
+
+func (w WorkerClient) DeletePod(workerAddress, containerID string) error {
+	url := fmt.Sprintf("%s/pods/%s", workerAddress, containerID)
+	return rest.Delete(url)
+}

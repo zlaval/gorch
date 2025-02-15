@@ -57,6 +57,21 @@ func (s *Scheduler) schedule(task Task) {
 
 	p := task.Pod
 
+	if p.MarkedForDelete {
+		err := s.client.DeletePod(selectedWorker.Address, p.ContainerID)
+		if err != nil {
+			slog.Error("deleting pod", slog.Any("error", err), slog.Any("pod", p))
+			return
+		}
+		p.Deleted = true
+		err = s.db.SavePod(p)
+		if err != nil {
+			slog.Error("save pod", slog.Any("error", err), slog.Any("pod", p))
+			return
+		}
+		return
+	}
+
 	res, err := s.client.CreatePod(selectedWorker.Address, p.ID, task.Deployment)
 	if err != nil {
 		slog.Error("creating pod", slog.Any("error", err))

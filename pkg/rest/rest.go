@@ -39,6 +39,18 @@ func Post[T any](url string, req any, fn BodyParserFunc[T]) (T, error) {
 	return fn(resp)
 }
 
+func Delete(url string) error {
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func ExtractBody[T any](resp *http.Response) (T, error) {
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {

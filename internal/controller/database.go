@@ -105,6 +105,13 @@ func (d *Database) loadAll(collection Collection) ([]any, error) {
 	return result, nil
 }
 
+func (d *Database) delete(collection Collection, id string) error {
+	return d.db.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(collection))
+		return bucket.Delete([]byte(id))
+	})
+}
+
 func unmarshalListToType[T any](data []any) ([]T, error) {
 	result := make([]T, 0, len(data))
 
@@ -153,9 +160,17 @@ func (d *Database) LoadDeployments() ([]deployment.Deployment, error) {
 	return unmarshalListToType[deployment.Deployment](res)
 }
 
+func (d *Database) DeleteDeployment(id string) error {
+	return d.delete(Deployments, id)
+}
+
 func (d *Database) SavePod(pod pod.Pod) error {
 	pod.LastUpdated = time.Now().UTC()
 	return d.save(Pods, pod.ID, pod)
+}
+
+func (d *Database) DeletePod(id string) error {
+	return d.delete(Pods, id)
 }
 
 func (d *Database) LoadPodsByDeploymentName(name []byte) ([]pod.Pod, error) {
@@ -209,4 +224,22 @@ func (d *Database) LoadWorker(id string) (*WorkerEntity, error) {
 		return nil, fmt.Errorf("unmarshal worker: %w", err)
 	}
 	return &w, nil
+}
+
+func (d *Database) LoadDeployment(id string) (*deployment.Deployment, error) {
+	var raw []byte
+	err := d.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(Deployments))
+		raw = bucket.Get([]byte(id))
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("load deployment: %w", err)
+	}
+
+	dp, err := unmarshalToType[deployment.Deployment](raw)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal deployment: %w", err)
+	}
+	return &dp, nil
 }
