@@ -38,13 +38,13 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	case command.Delete:
 		return p.deleteDeployment(cmd)
 	case command.Scale:
-		return []string{"test"}, nil
+		return p.scale(cmd)
 	case command.Inspect:
 		return p.inspect(cmd)
 	case command.Log:
 		return p.logs(cmd)
 	case command.History:
-		return []string{"test"}, nil
+		return p.history(cmd)
 	case command.Workers:
 		return []string{"test"}, nil
 	case command.ListDeployments:
@@ -180,4 +180,32 @@ func (p *CommandProcessor) deleteDeployment(cmd command.Command) ([]string, erro
 		fmt.Sprintf("%s deployment scheduled to deletion", d.Name),
 	}, nil
 
+}
+
+func (p *CommandProcessor) scale(cmd command.Command) ([]string, error) {
+	d, err := p.db.LoadDeployment(cmd.DeploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := fmt.Sprintf("scale from %d to %d", d.Replicas, cmd.Replicas)
+
+	d.Replicas = cmd.Replicas
+	d.History = append(d.History, msg)
+
+	err = p.db.SaveDeployment(*d)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{msg}, nil
+}
+
+func (p *CommandProcessor) history(cmd command.Command) ([]string, error) {
+	d, err := p.db.LoadDeployment(cmd.DeploymentID)
+	if err != nil {
+		return nil, err
+	}
+	return d.History, nil
 }
