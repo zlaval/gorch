@@ -15,6 +15,16 @@ const (
 	WorkerDown
 )
 
+func (w WorkerStatus) String() string {
+	switch w {
+	case WorkerUp:
+		return "Up"
+	case WorkerDown:
+		return "Down"
+	}
+	return ""
+}
+
 type WorkerEntity struct {
 	Name    string
 	Address string
@@ -53,4 +63,11 @@ func (w WorkerClient) PodLogs(workerAddress, containerID string) (pod.Logs, erro
 func (w WorkerClient) DeletePod(workerAddress, containerID string) error {
 	url := fmt.Sprintf("%s/pods/%s", workerAddress, containerID)
 	return rest.Delete(url)
+}
+
+func (w WorkerClient) NodeMetrics(workerAddress string) (metrics.Metrics, error) {
+	return rest.Get(
+		fmt.Sprintf("%s/metrics", workerAddress),
+		rest.ExtractBody[metrics.Metrics],
+	)
 }

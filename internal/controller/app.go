@@ -30,11 +30,13 @@ func (c controllerCmd) run(cmd *cobra.Command, _ []string) error {
 
 	sc := NewScheduler(db, wc)
 	mo := NewMonitor(db, sc)
+	mc := NewMetricsCollector(db, wc)
 	cp := NewCommandProcessor(db, sc, wc)
 	api := NewApi(db, cp)
 
 	go sc.Run(ctx)
 	go mo.Run(ctx)
+	go mc.Run(ctx)
 
 	return api.Run(ctx)
 }

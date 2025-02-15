@@ -46,7 +46,7 @@ func (p *CommandProcessor) Execute(cmd command.Command) ([]string, error) {
 	case command.History:
 		return p.history(cmd)
 	case command.Workers:
-		return []string{"test"}, nil
+		return p.workers()
 	case command.ListDeployments:
 		return p.deployments()
 	}
@@ -208,4 +208,26 @@ func (p *CommandProcessor) history(cmd command.Command) ([]string, error) {
 		return nil, err
 	}
 	return d.History, nil
+}
+
+func (p *CommandProcessor) workers() ([]string, error) {
+	wo, err := p.db.LoadWorkers()
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]string, 0, len(wo)+1)
+	res = append(res, "Name		Status		Load5		Memory(tot./ava.)	Address")
+
+	for w := range slices.Values(wo) {
+		m := w.Metrics
+		load := fmt.Sprintf("%.2f", m.Load5)
+		memory := fmt.Sprintf("%dMB/%dMB", m.TotalAvailableMemoryMB, m.AvailableMemoryMB)
+
+		txt := fmt.Sprintf("%s\t\t%s\t\t%s\t\t%s\t\t%s",
+			w.Name, w.Status, load, memory, w.Address,
+		)
+		res = append(res, txt)
+	}
+	return res, nil
 }
