@@ -60,12 +60,31 @@ func (m Monitor) handleDeployment(dpl deployment.Deployment) {
 	m.markPodsOfDeletedDeployment(&dpl, pods)
 	m.deleteRemovedPods(&dpl, pods)
 	m.markFailedPods(&dpl, pods)
+	m.checkWaitingPods(&dpl, pods)
 	m.balancePods(&dpl, pods)
 
 	if err := m.db.SaveDeployment(dpl); err != nil {
 		slog.Error("save deployment", slog.Any("error", err))
 	}
 
+}
+
+func (m Monitor) checkWaitingPods(dpl *deployment.Deployment, pods []pod.Pod) {
+	for i, p := range pods {
+		if p.MarkedForDelete || p.Deleted {
+			continue
+		}
+		switch p.State {
+		case "waiting":
+			p.State = "created"
+			if err := m.db.SavePod(p); err != nil {
+				slog.Error("save pod", slog.Any("error", err))
+				continue
+			}
+			pods[i] = p
+			m.scheduler.Add(Task{*dpl, p})
+		}
+	}
 }
 
 func (m Monitor) markPodsOfDeletedDeployment(dpl *deployment.Deployment, pods []pod.Pod) {

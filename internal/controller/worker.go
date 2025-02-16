@@ -6,6 +6,7 @@ import (
 	"gorch/pkg/metrics"
 	"gorch/pkg/pod"
 	"gorch/pkg/rest"
+	"net/http"
 )
 
 type WorkerStatus int
@@ -77,4 +78,15 @@ func (w WorkerClient) PodMetrics(workerAddress string) ([]metrics.PodStats, erro
 		fmt.Sprintf("%s/pods/metrics", workerAddress),
 		rest.ExtractBody[[]metrics.PodStats],
 	)
+}
+
+func (w WorkerClient) Health(workerAddress string) error {
+	st, err := rest.Get(
+		fmt.Sprintf("%s/health", workerAddress),
+		rest.ExtractStatus,
+	)
+	if err != nil || st != http.StatusOK {
+		return fmt.Errorf("worker %s is unhealthy", workerAddress)
+	}
+	return nil
 }

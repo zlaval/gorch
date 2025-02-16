@@ -5,6 +5,8 @@ import (
 	"gorch/pkg/deployment"
 	"gorch/pkg/pod"
 	"log/slog"
+	"math/rand"
+	"slices"
 )
 
 type Task struct {
@@ -49,11 +51,38 @@ func (s *Scheduler) schedule(task Task) {
 	}
 
 	if len(workers) == 0 {
-		slog.Warn("no worker")
+		slog.Warn("no worker available")
+		p := task.Pod
+		p.State = "waiting"
+		_ = s.db.SavePod(p)
 		return
 	}
 
-	selectedWorker := workers[0]
+	//silly select algorithm: randomly pick worker if it has enough memory
+	//TASK: better scheduler algorithm
+	//Problem: last metric was gathered 10s ago and multiple pods might create the worker
+	//Solution: get metrics before a pod created or calculate the remaining resources from last metrics + deployment resources requirement
+	var candidates []WorkerEntity
+	for w := range slices.Values(workers) {
+		if w.Status == WorkerUp &&
+			w.Metrics.AvailableMemoryMB > uint64(task.Deployment.Config.MemoryRequest) {
+			candidates = append(candidates, w)
+		}
+	}
+
+	if len(candidates) == 0 {
+		slog.Warn("no worker available")
+		p := task.Pod
+		p.State = "waiting"
+		_ = s.db.SavePod(p)
+		return
+	}
+
+	rand.Shuffle(len(candidates), func(i, j int) {
+		candidates[i], candidates[j] = candidates[j], candidates[i]
+	})
+
+	selectedWorker := candidates[0]
 
 	p := task.Pod
 

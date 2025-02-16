@@ -148,6 +148,10 @@ func (d *Database) LoadWorkers() ([]WorkerEntity, error) {
 	return unmarshalListToType[WorkerEntity](jsonData)
 }
 
+func (d *Database) DeleteWorker(worker WorkerEntity) error {
+	return d.delete(Workers, worker.Name)
+}
+
 func (d *Database) SaveDeployment(deployment deployment.Deployment) error {
 	return d.save(Deployments, deployment.ID, deployment)
 }

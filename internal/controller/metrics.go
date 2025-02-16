@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"time"
@@ -40,12 +41,55 @@ func (m MetricsCollector) collectMetrics() {
 	}
 
 	for w := range slices.Values(workers) {
+		m.checkHealth(w)
 		m.collectNodeMetrics(w)
 		m.checkPods(w)
 	}
 }
 
+func (m MetricsCollector) checkHealth(w WorkerEntity) {
+	err := m.client.Health(w.Address)
+	if err != nil {
+		pods, err := m.db.LoadPods()
+		if err != nil {
+			slog.Error("load pods", slog.Any("error", err))
+			return
+		}
+
+		//TASK: wait 3 health check grace period and only delete pods after that
+		for p := range slices.Values(pods) {
+			if p.Worker == w.Name {
+				_ = m.db.DeletePod(p.ID)
+				d, err := m.db.LoadDeployment(p.DeploymentID)
+				if err != nil {
+					slog.Error("loading deployment", slog.Any("error", err))
+					continue
+				}
+				d.History = append(d.History,
+					fmt.Sprintf("delete pod %s at %s", p.ID, time.Now().UTC().Format(time.DateTime)),
+				)
+				_ = m.db.SaveDeployment(*d)
+			}
+		}
+
+		if w.Status == WorkerDown {
+			_ = m.db.DeleteWorker(w)
+		} else {
+			w.Status = WorkerDown
+			err = m.db.SaveWorker(w)
+			if err != nil {
+				slog.Error("save worker", slog.Any("error", err))
+			}
+		}
+
+	}
+}
+
 func (m MetricsCollector) collectNodeMetrics(w WorkerEntity) {
+	if w.Status == WorkerDown {
+		return
+	}
+
 	mtr, err := m.client.NodeMetrics(w.Address)
 	if err != nil {
 		slog.Error("load node metrics", slog.Any("error", err))
@@ -59,6 +103,10 @@ func (m MetricsCollector) collectNodeMetrics(w WorkerEntity) {
 }
 
 func (m MetricsCollector) checkPods(w WorkerEntity) {
+	if w.Status == WorkerDown {
+		return
+	}
+
 	stats, err := m.client.PodMetrics(w.Address)
 	if err != nil {
 		slog.Error("pods metrics", slog.Any("error", err))

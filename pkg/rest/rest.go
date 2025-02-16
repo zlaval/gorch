@@ -66,3 +66,7 @@ func ExtractBody[T any](resp *http.Response) (T, error) {
 func OmitBody(_ *http.Response) (any, error) {
 	return nil, nil
 }
+
+func ExtractStatus(r *http.Response) (int, error) {
+	return r.StatusCode, nil
+}
