@@ -41,6 +41,7 @@ func (m MetricsCollector) collectMetrics() {
 
 	for w := range slices.Values(workers) {
 		m.collectNodeMetrics(w)
+		m.checkPods(w)
 	}
 }
 
@@ -54,5 +55,43 @@ func (m MetricsCollector) collectNodeMetrics(w WorkerEntity) {
 	err = m.db.SaveWorker(w)
 	if err != nil {
 		slog.Error("save node metrics", slog.Any("error", err))
+	}
+}
+
+func (m MetricsCollector) checkPods(w WorkerEntity) {
+	stats, err := m.client.PodMetrics(w.Address)
+	if err != nil {
+		slog.Error("pods metrics", slog.Any("error", err))
+	}
+
+	pods, err := m.db.LoadPods()
+	if err != nil {
+		slog.Error("loading pods", slog.Any("error", err))
+	}
+
+	for s := range slices.Values(stats) {
+		for p := range slices.Values(pods) {
+			if p.ContainerID == s.ContainerID {
+				p.State = s.State
+				_ = m.db.SavePod(p)
+				break
+			}
+		}
+	}
+
+	for p := range slices.Values(pods) {
+		if p.Worker == w.Name {
+			exists := false
+			//check if pod exists on the worker
+			for s := range slices.Values(stats) {
+				if p.ContainerID == s.ContainerID {
+					exists = true
+				}
+			}
+			if !exists {
+				p.State = "dead"
+				_ = m.db.SavePod(p)
+			}
+		}
 	}
 }

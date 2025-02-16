@@ -169,6 +169,14 @@ func (d *Database) SavePod(pod pod.Pod) error {
 	return d.save(Pods, pod.ID, pod)
 }
 
+func (d *Database) LoadPods() ([]pod.Pod, error) {
+	res, err := d.loadAll(Pods)
+	if err != nil {
+		return nil, fmt.Errorf("load pods: %w", err)
+	}
+	return unmarshalListToType[pod.Pod](res)
+}
+
 func (d *Database) DeletePod(id string) error {
 	return d.delete(Pods, id)
 }

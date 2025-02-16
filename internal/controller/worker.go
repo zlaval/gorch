@@ -71,3 +71,10 @@ func (w WorkerClient) NodeMetrics(workerAddress string) (metrics.Metrics, error)
 		rest.ExtractBody[metrics.Metrics],
 	)
 }
+
+func (w WorkerClient) PodMetrics(workerAddress string) ([]metrics.PodStats, error) {
+	return rest.Get(
+		fmt.Sprintf("%s/pods/metrics", workerAddress),
+		rest.ExtractBody[[]metrics.PodStats],
+	)
+}
