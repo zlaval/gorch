@@ -1,0 +1,28 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+title Gorch: Start a Container
+
+group Init Connection
+Gorch -> Docker: Connect
+Docker --> Gorch: return Connection
+end
+Gorch -> Docker: Pull Image
+group Create and Start
+Gorch -> Docker: Create Container
+Docker --> Gorch: <ContainerID>
+Gorch -> Docker: Start Container <ContainerID>
+end
+group Wait for Startup
+Gorch -> Docker: Wait Until Container Up & Running
+Docker-> Docker: Status
+Docker --> Gorch: Running Signal
+end
+group Logs
+Gorch -> Docker: GET Container Logs
+Docker --> Gorch: Return Log Lines
+end
+
+@enduml
