@@ -7,6 +7,7 @@ import (
 	"gorch/pkg/rest"
 	"os"
 	"slices"
+	"text/tabwriter"
 )
 
 type cliConfig struct {
@@ -46,9 +47,11 @@ func ExecuteCommand(cmd command.Command) error {
 		return err
 	}
 
+	w := tabwriter.NewWriter(os.Stdout, 5, 0, 4, ' ', 0)
 	for r := range slices.Values(res.Data) {
-		fmt.Println(r)
+		_, _ = fmt.Fprintln(w, r)
 	}
+	_ = w.Flush()
 
 	return nil
 }

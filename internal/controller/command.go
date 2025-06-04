@@ -82,9 +82,9 @@ func (p *CommandProcessor) deployments() ([]string, error) {
 	}
 
 	res := make([]string, 0)
-	res = append(res, "Name		Status		Replicas	Created			ID")
+	res = append(res, "Name\tStatus\tReplicas\tCreated\tID")
 	for d := range slices.Values(deployments) {
-		line := fmt.Sprintf("%s\t%s\t\t%d\t\t%s\t%s\t",
+		line := fmt.Sprintf("%s\t%s\t%d\t%s\t%s",
 			d.Name, d.State, d.Replicas, d.CreatedAt.Format(time.DateTime), d.ID,
 		)
 		res = append(res, line)
@@ -94,7 +94,7 @@ func (p *CommandProcessor) deployments() ([]string, error) {
 
 func (p *CommandProcessor) listPods(cmd command.Command) ([]string, error) {
 	res := make([]string, 0)
-	res = append(res, "Name					Deployment	Status		Worker		IP		ContainerPorts		EpheremarPorts		Started")
+	res = append(res, "Name\tDeployment\tStatus\tWorker\tIP\tContainerPorts\tEpheremarPorts\tStarted")
 
 	deployments, err := p.db.LoadDeployments()
 	if err != nil {
@@ -113,7 +113,7 @@ func (p *CommandProcessor) listPods(cmd command.Command) ([]string, error) {
 				containerPorts = append(containerPorts, string(port))
 			}
 
-			line := fmt.Sprintf("%s\t%s\t%s\t\t%s\t\t%s\t%s\t\t\t%s\t\t\t%s",
+			line := fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
 				p.ID, d.Name, p.State, p.Worker, p.IP,
 				strings.Join(containerPorts, ","),
 				strings.Join(p.EphemeralPorts, ","),
@@ -217,14 +217,14 @@ func (p *CommandProcessor) workers() ([]string, error) {
 	}
 
 	res := make([]string, 0, len(wo)+1)
-	res = append(res, "Name		Status		Load5		Memory(tot./ava.)	Address")
+	res = append(res, "Name\tStatus\tLoad5\tMemory(tot./ava.)\tAddress")
 
 	for w := range slices.Values(wo) {
 		m := w.Metrics
 		load := fmt.Sprintf("%.2f", m.Load5)
 		memory := fmt.Sprintf("%dMB/%dMB", m.TotalAvailableMemoryMB, m.AvailableMemoryMB)
 
-		txt := fmt.Sprintf("%s\t\t%s\t\t%s\t\t%s\t\t%s",
+		txt := fmt.Sprintf("%s\t%s\t%s\t%s\t%s",
 			w.Name, w.Status, load, memory, w.Address,
 		)
 		res = append(res, txt)
