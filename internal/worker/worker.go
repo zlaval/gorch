@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
@@ -23,11 +22,11 @@ type Worker struct {
 	client *client.Client
 }
 
-func NewWorker(client *client.Client) Worker {
-	return Worker{client}
+func NewWorker(client *client.Client) *Worker {
+	return &Worker{client}
 }
 
-func (w Worker) ListPods(ctx context.Context) ([]pod.Stats, error) {
+func (w *Worker) ListPods(ctx context.Context) ([]pod.Stats, error) {
 	cs, err := w.client.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		return nil, fmt.Errorf("list containers: %w", err)
@@ -49,7 +48,7 @@ func (w Worker) ListPods(ctx context.Context) ([]pod.Stats, error) {
 	return res, nil
 }
 
-func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.ClientResponse {
+func (w *Worker) Start(ctx context.Context, request pod.CreateRequest) pod.ClientResponse {
 	// pull image
 	reader, err := w.client.ImagePull(ctx, request.Image, image.PullOptions{})
 	if err != nil {
@@ -134,7 +133,7 @@ func (w Worker) Start(ctx context.Context, request pod.CreateRequest) pod.Client
 	}
 }
 
-func (w Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse {
+func (w *Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse {
 	//Stop container
 	if err := w.client.ContainerStop(ctx, containerID, container.StopOptions{}); err != nil {
 		return pod.ClientResponse{
@@ -161,11 +160,11 @@ func (w Worker) Stop(ctx context.Context, containerID string) pod.ClientResponse
 
 }
 
-func (w Worker) Inspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
+func (w *Worker) Inspect(ctx context.Context, containerID string) (container.InspectResponse, error) {
 	return w.client.ContainerInspect(ctx, containerID)
 }
 
-func (w Worker) Logs(ctx context.Context, containerID string) pod.Logs {
+func (w *Worker) Logs(ctx context.Context, containerID string) pod.Logs {
 	res := pod.Logs{
 		ContainerID: containerID,
 	}

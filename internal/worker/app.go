@@ -9,6 +9,7 @@ import (
 	"log"
 	"log/slog"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -46,25 +47,67 @@ func (c *workerCmd) init() {
 }
 
 func (c *workerCmd) run(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer cli.Close()
 
-	for {
+	// Simple registration flow, easy to understand, but does not work properly.
+	// (It waits 10s in main goroutine even if the context was cancelled)
+
+	/*for {
 		if err := c.registerWorker(); err == nil {
 			break
 		}
 		slog.Warn("Cannot register worker, keep trying")
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
 		time.Sleep(10 * time.Second)
-	}
+	}*/
+
+	// Proper worker registration flow
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		if err := c.registerWorker(); err == nil {
+			slog.Info("Worker registration is done")
+			return
+		} else {
+			slog.Info("Cannot register worker, start registration loop")
+		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				slog.Warn("Context canceled, stop worker registration process")
+				return
+			case <-ticker.C:
+				if err := c.registerWorker(); err == nil {
+					slog.Info("Worker registration is done")
+					return
+				}
+				slog.Warn("Cannot register worker, keep trying")
+			}
+		}
+	}()
+	wg.Wait()
 
 	w := NewWorker(cli)
 	m := NewMetricsCollector(cli)
 	a := NewApi(c.port, w, m)
 
-	return a.Run(cmd.Context())
+	return a.Run(ctx)
 }
 
 func (c *workerCmd) registerWorker() error {

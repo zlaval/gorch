@@ -72,7 +72,7 @@ func (p *CommandProcessor) create(cmd command.Command) ([]string, error) {
 		return nil, fmt.Errorf("save deployment: %w", err)
 	}
 
-	return []string{fmt.Sprintf("Deployment has been created")}, nil
+	return []string{"Deployment has been created"}, nil
 }
 
 func (p *CommandProcessor) deployments() ([]string, error) {

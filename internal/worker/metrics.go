@@ -17,13 +17,13 @@ type MetricsCollector struct {
 	client *client.Client
 }
 
-func NewMetricsCollector(client *client.Client) MetricsCollector {
-	return MetricsCollector{
+func NewMetricsCollector(client *client.Client) *MetricsCollector {
+	return &MetricsCollector{
 		client: client,
 	}
 }
 
-func (m MetricsCollector) CollectPodMetrics(ctx context.Context) []metrics.PodStats {
+func (m *MetricsCollector) CollectPodMetrics(ctx context.Context) []metrics.PodStats {
 	containers, err := m.client.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		slog.Error("collect containers", slog.Any("error", err))
@@ -51,7 +51,7 @@ func (m MetricsCollector) CollectPodMetrics(ctx context.Context) []metrics.PodSt
 	return res
 }
 
-func (m MetricsCollector) CollectNodeMetrics() metrics.Metrics {
+func (m *MetricsCollector) CollectNodeMetrics() metrics.Metrics {
 	result := metrics.Metrics{}
 
 	memory, err := mem.VirtualMemory()

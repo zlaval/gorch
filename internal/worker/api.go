@@ -15,11 +15,11 @@ import (
 
 type Api struct {
 	port             int
-	worker           Worker
-	metricsCollector MetricsCollector
+	worker           *Worker
+	metricsCollector *MetricsCollector
 }
 
-func NewApi(port int, worker Worker, metricsCollector MetricsCollector) *Api {
+func NewApi(port int, worker *Worker, metricsCollector *MetricsCollector) *Api {
 	return &Api{
 		port:             port,
 		worker:           worker,
