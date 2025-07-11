@@ -1,0 +1,34 @@
+@startuml
+hide empty description
+'https://plantuml.com/sequence-diagram
+
+scale 800 width
+
+state Monitor_MarkedForDeletion{
+Deployment --> MarkedDeployment
+MarkedDeployment: scheduled for deletion
+Deployment --> ActiveDeployment
+
+MarkedDeployment --> DeletedDeployment : no pod
+MarkedDeployment --> Pods : has pods
+Pods --> MarkedPod
+MarkedPod: scheduled for deletion
+Pods --> ActivePod
+
+MarkedPod --> [*]: delete
+
+ActivePod -> MarkedPod : mark
+
+ActiveDeployment --> RemovablePods
+RemovablePods: unhealthy, scaled in ...
+RemovablePods --> MarkedPod: mark
+
+ActiveDeployment --> HealthyPods
+HealthyPods --> RemovablePods : scale in
+}
+
+Monitor_MarkedForDeletion --> Monitor_MarkedForDeletion : Loop
+
+
+
+@enduml
